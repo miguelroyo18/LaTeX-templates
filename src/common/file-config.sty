@@ -1,0 +1,40 @@
+% File: file-config.sty
+
+% Spacing and geometry
+\usepackage{geometry}
+\geometry{
+    a4paper,
+    centering,
+    margin = 25mm,
+    % includehead, % Include head into total body (text area)
+    % includefoot, % Include foot into total body (text area)
+}
+
+% Header and footer
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\ifodd\value{page} \rightmark \else \thepage \fi}
+\fancyhead[R]{\ifodd\value{page} \thepage \else \nouppercase{\leftmark} \fi}
+
+% Paragrahp
+\usepackage{titlesec}
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+\titleformat{\paragraph}
+  {\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+  {0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+% Tables
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+
+% mdframed
+\usepackage{mdframed}
+\mdfdefinestyle{code}{innertopmargin=10pt, innerbottommargin=10pt}
+
+% Useful commands
+\newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
+\newcommand{\sectionmarkwithoutsections}[1]{\markright{#1}}
+

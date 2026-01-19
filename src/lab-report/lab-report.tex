@@ -1,0 +1,212 @@
+% File: lab-report.tex
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[T1]{fontenc}
+
+\usepackage{amssymb} % AMS fonts
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\usepackage{../common/file-config}
+\usepackage{../common/colours}
+\usepackage{../common/listings-config}
+
+\usepackage{graphicx}
+% \graphicspath{{res/}}
+
+% Tables
+\usepackage{booktabs}
+\usepackage[table]{xcolor}
+\usepackage{multirow}
+
+% Algorithms
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{}
+\renewcommand{\thealgorithm}{}
+
+\usepackage{url}
+\usepackage[pdftex, colorlinks=true, citecolor=cyan, linkcolor=black, 
+urlcolor=black]{hyperref}
+
+\usepackage[backend=biber, style=numeric]{biblatex}
+\addbibresource{references.bib}
+
+\begin{document}
+    
+\begin{titlepage}
+	\centering
+    % \includegraphics[width=0.5\textwidth]{logo.pdf} \par \vspace{1cm}
+	{\scshape \LARGE Asignatura \par}
+	\vspace{1cm}
+	{\huge\bfseries Práctica... \par}
+	\vspace{2cm}
+	{\Large Autor} \par
+    \texttt{NIP} \par
+	\vspace{2cm}
+    \textbf{Grupo: }A
+    \vfill
+    {\Large \today \par}
+\end{titlepage}
+
+% \clearemptydoublepage
+
+\thispagestyle{empty}
+\tableofcontents
+
+\newpage
+% \clearemptydoublepage
+
+\section{Sección 1}
+
+\subsection{\texttt{mdframed}}
+
+\begin{figure}[h!] 
+    \center
+    \begin{mdframed}[style=code, nobreak=false]
+\begin{verbatim}
+function Simulated_Annealing(T0, k, Tfinal)
+    Sactual <- Solución inicial
+    for T=T0 to Tfinal do
+        if T=0 then return Sactual
+        else Snuevo <- Nueva solución aleatoria
+        Inc(C) <- Coste(Snuevo) - Coste(Sactual)
+        if (Inc(C) > 0) then Sactual <- Snuevo
+        else Sactual <- Snuevo con probabilidad Exp(Inc(C) / F(T))
+                                   donde F(T) = k*Exp(-delta*T)
+        T <- Evolucion(T)
+\end{verbatim}
+    \end{mdframed}
+    \caption{Pseudocódigo del algoritmo \textit{Simulated Annealing}}
+\end{figure}
+
+\subsection{Algoritmos}
+
+\begin{algorithm}
+\caption{ECCTA$(m, n, t_1, \dots, t_n, v_1, \dots v_m)$}
+    \begin{algorithmic}[1]
+        \For{$j \gets 1$ \textbf{to} $m$}
+            \State $\hat{W}(j) = 0$; $\hat{A}(j) = \emptyset$
+        \EndFor
+        
+        \For{$i \gets 1$ \textbf{to} $n$}
+            \State Sea $j$ el que tiene menor $\hat{W}(j) + t_i/v_j$
+            \State Añade $i$ a $\hat{A}(j)$
+            \State $\hat{W}(j) = \hat{W}(j) + t_i/v_j$
+        \EndFor
+        
+        \State $\hat{c} = \max_{j} \hat{W}(j)$
+        
+        \State \Return $\hat{A}$, $\hat{W}$, $\hat{c}$
+    \end{algorithmic}
+\end{algorithm}
+
+\newpage
+
+\thispagestyle{empty}
+\nocite{*}
+\printbibliography
+
+\newpage
+
+\appendix
+
+\section{Gestión de la práctica}
+
+\begin{table}[h!]
+    \center
+    \small
+    \begin{tabular}{|p{5cm}|p{5cm}|c|c|c|}
+        \bottomrule
+        \rowcolor{emerald}
+        \textbf{Parte} & \textbf{Tarea} & \textbf{Autor 1} & \textbf{Autor 2} & \textbf{Total}\\
+        \toprule
+        \bottomrule
+        \multirow{5}{*}{\textbf{Análisis de requisitos I}} & Planteamiento del trabajo & 2h & 2h & 4h \\
+        \cline{2-5}
+                                                           & Recopilación de información & 4h & 5h & 9h \\
+        \cline{2-5}
+                                                           & Análisis etnográfico & 2h & - & 2h \\
+        \cline{2-5}
+                                                           & Estudio de la audiencia & 2h & - & 2h \\
+        \cline{2-5}                       
+                                                           & Estudio de la competencia & 2h & 1h & 3h \\
+        \hline
+        \multirow{6}{*}{\textbf{Análisis de requisitos II}} & Reunión de control & 2h & 2h & 4h \\
+        \cline{2-5}
+                                                            & Requisitos funcionales & 1h & 3h & 4h \\
+        \cline{2-5}
+                                                            & Casos de uso & 2h & 1h & 3h \\
+        \cline{2-5}
+                                                            & Objetivos de usabilidad & 2h & 1h & 3h \\
+        \cline{2-5}                       
+                                                            & Estudio de los posibles dispositivos & - & 2h & 2h \\
+        \hline
+        \multirow{4}{*}{\textbf{Documento de diseño I}} & Reunión de control & 3h & 3h & 6h \\
+        \cline{2-5}
+                                                        & Primer prototipo & 22h & 8h & 30h \\
+        \cline{2-5}
+                                                        & Diseño de la Interfaz: Reglas & 3h & 1h & 4h \\
+        \cline{2-5}
+                                                        & Mapa de navegación & 1h & 4h & 5h \\
+        \hline
+        \multirow{4}{*}{\textbf{Documento de diseño II}} & Reunión de control & 1h & 1h & 2h \\
+        \cline{2-5}
+                                                         & Primera evaluación del prototipo & 2h & 4h & 6h \\
+        \cline{2-5}
+                                                         &  Correcciones al prototipo & 5h & 2h & 7h \\
+        \hline
+        \multirow{3}{*}{\textbf{Implementación I}} & Reuniones de control & 3h & 3h & 6h \\
+        \cline{2-5}
+                                                   & Prototipo en Axure & 10h & 20h & 30h \\
+        \cline{2-5}
+                                                   & Reglas de diseño & 1h & - & 1h \\
+        \hline
+    
+        \multirow{3}{*}{\textbf{Implementación II}} & Reuniones de control & 3h & 3h & 6h \\
+        \cline{2-5}
+                                                    & Evaluación por heurísticas  & 2h & 2h & 4h \\
+        \cline{2-5}
+                                                    & Correcciones al prototipo & 1h & 1h & 2h \\
+        \toprule
+        \bottomrule
+        \textbf{Total} & -  & 76h & 69h & 141h \\
+        \toprule
+    \end{tabular}
+    \caption{Horas de trabajo por integrante del equipo y tarea}
+\end{table}
+
+\newpage
+
+\section{Código}
+
+\begin{figure}[h!]
+    \center
+    \begin{lstlisting}[language=Haskell]
+    navigate :: Int -> Menu -> Menu
+    navigate num menu = menu {pos = newPos, page = head $ newData newPos, firstIndex = (newData newPos) !! 1, lastIndex = last $ newData newPos}
+        where
+            newPos :: Int
+            newPos = if (pos menu) + num < 0 || (menuContent menu) == [] || (pos menu) + num == length (menuContent menu)
+                then (pos menu)
+                else (pos menu) + num
+    
+            -- [page, firstIndex, lastIndex]
+            newData :: Int -> [Int]
+            newData pos = [newPage] ++ newIndexes newPage
+                where
+                    newPage :: Int
+                    newPage
+                        | pos < (firstIndex menu) = (page menu) - 1
+                        | pos >= (lastIndex menu) = (page menu) + 1
+                        | otherwise = (page menu)
+    
+                    newIndexes :: Int -> [Int]
+                    newIndexes page = [page * (numPos menu), (page + 1) * (numPos menu)]
+    \end{lstlisting}
+    \caption{Código en \texttt{Haskell}}
+\end{figure}
+
+\end{document}

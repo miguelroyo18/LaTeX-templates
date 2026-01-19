@@ -1,0 +1,82 @@
+% File: timetable.tex
+% Description: Timetable template in LaTeX. Based on an Overleaf template
+%              by Luis Gustavo Lang Gaiato, licensed under CC BY 4.0.
+%              The original can be found in
+%              https://www.overleaf.com/latex/examples/grade-de-horarios-timetable/mnhxbxhrttmt
+
+\documentclass[extrafontsizes, 20pt]{memoir}
+
+\usepackage{xcolor}
+\usepackage{colortbl} % Provides commands used to colour tables.
+\usepackage[left=1.2cm, right=1.2cm, top=0.8cm, bottom=0.8cm, paperwidth=25cm, paperheight=30cm, landscape]{geometry}
+\usepackage[sc]{mathpazo} % Changes the default roman font family to Adobe
+                          % Palatino. The option [sc] selects Palatino with real
+                          % smallcaps.
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{multicol, multirow}
+\usepackage{nicematrix}
+
+% Colours
+\definecolor{Investigación operativa}{HTML}{ffb3ba} % Red
+\definecolor{Investigación operativa (probl.)}{HTML}{ffb3ba} % Red
+\definecolor{Geometría de curvas y superficies}{HTML}{ffdcb3} % Orange
+\definecolor{Geometría de curvas y superficies (probl.)}{HTML}{ffdcb3} % Orange
+\definecolor{Modelización matemática}{HTML}{ffffb3} % Yellow
+\definecolor{Modelización matemática (probl.)}{HTML}{ffffb3} % Yellow
+\definecolor{Modelización matemática (ord.)*}{HTML}{ffffb3} % Yellow
+\definecolor{Teoría de Galois}{HTML}{b3ffb3} % Green
+\definecolor{Integral de Lebesgue}{HTML}{b3ccff} % Blue
+\definecolor{Sistemas distribuidos}{HTML}{dfb3ff} % Purple
+\definecolor{Sistemas distribuidos (probl.)}{HTML}{dfb3ff} % Purple
+\definecolor{Sistemas distribuidos (pract.)*}{HTML}{dfb3ff} % Purple
+\definecolor{Sistemas de la información}{HTML}{ffc8dd} % Pink
+\definecolor{Sistemas de la información (probl.)}{HTML}{ffc8dd} % Pink
+\definecolor{Sistemas de la información (pract.)*}{HTML}{ffc8dd} % Pink
+
+\newcolumntype{x}[1]{>{\center\vspace{4pt}\hspace{0pt}}m{#1}} 
+
+\newcommand{\subject}[1]{\footnotesize{#1}\cellcolor{#1}}
+\newcommand{\tn}{\tabularnewline}
+
+
+\begin{document}
+
+\center
+{\Large Curso 2024-2025}\\
+4º (S7) - Programa Conjunto en Matemáticas e Ingeniería Informática
+
+\begin{table}[!h]
+    \begin{NiceTabular}{|c|x{4.5cm}|x{4.5cm}|x{4.5cm}|x{4.5cm}|x{4.5cm}|}[first-row,first-col]
+        & & Lunes & Martes & Miércoles & Jueves & Viernes \tn \bottomrule
+        \multirow{6}{*}{\rotatebox[origin=c]{90}{Matemáticas}}
+        & 09:00 & \subject{Teoría de Galois} & \subject{Teoría de Galois} & & \subject{Geometría de curvas y superficies (probl.)} & \tn \hline
+        & 10:00 & & \subject{Modelización matemática (probl.)} & \subject{Geometría de curvas y superficies} & \subject{Teoría de Galois} & \subject{Geometría de curvas y superficies} \tn \hline
+        & 11:00 & \subject{Investigación operativa} & \subject{Investigación operativa} & \subject{Investigación operativa (probl.)} & \subject{Investigación operativa (probl.)} & \subject{Teoría de Galois} \tn \hline
+        & 12:00 & \subject{Integral de Lebesgue} & \subject{Integral de Lebesgue} & \subject{Integral de Lebesgue} & & \subject{Integral de Lebesgue} \tn \hline
+        & 13:00 & \subject{Modelización matemática (ord.)*} & & \subject{Modelización matemática} & & \subject{Modelización matemática} \tn \hline
+        & 14:00 & \subject{Modelización matemática (ord.)*} & & & & \tn \toprule
+        \multirow{5}{*}{\rotatebox[origin=c]{90}{Informática}}
+        & 15:00 & & \subject{Sistemas de la información (probl.)} & & & \subject{Sistemas de la información (pract.)*} \tn \hline
+        & 16:00 & & & & & \subject{Sistemas de la información (pract.)*} \tn \hline
+        & 17:00 & \subject{Sistemas distribuidos} & & \subject{Sistemas de la información} & & \subject{Sistemas distribuidos (pract.)*} \tn \hline
+        & 18:00 & \subject{Sistemas distribuidos} & & \subject{Sistemas de la información} & & \subject{Sistemas distribuidos (pract.)*} \tn \hline
+        & 19:00 & \subject{Sistemas distribuidos (probl.)} & & & & \tn \toprule
+    \end{NiceTabular}
+\end{table}
+
+\newpage
+
+\Large{Prácticas (*)}
+\vspace{0.2cm}
+
+\begin{table}[!h]
+    \begin{NiceTabular}{|l|l|}
+        \hline
+        \subject{Modelización matemática} & \footnotesize{Cada dos semanas}\\ \hline
+        \subject{Sistemas distribuidos} & \footnotesize{Viernes A, 17:00-19:00, L1.02}\\ \hline
+        \subject{Sistemas de la información} & \footnotesize{Viernes, 15:00-17:00, L0.04}\\ \hline
+    \end{NiceTabular}
+\end{table}
+
+\end{document}
