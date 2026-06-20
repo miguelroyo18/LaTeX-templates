@@ -1,0 +1,1205 @@
+/* A ledger should feel calm, precise, and trustworthy. The grid is the hero;
+   everything around it stays quiet. One accent (ledger green) marks money that
+   accumulates. Figures are tabular so columns line up like a real ledger. */
+
+:root {
+  --ink: #1b1d1c;
+  --paper: #fbfbf9;
+  --surface: #ffffff;
+  --surface-2: #f1f0ec;
+  --line: #e4e3dd;
+  --line-strong: #cfcec7;
+  --muted: #8a8a82;
+  --accent: #1f6b4f; /* ledger green — "in the black" */
+  --accent-solid: #1f6b4f; /* verde de botones, texto blanco en ambos temas */
+  --accent-tint: #eef4f0;
+  --danger: #b23b3b;
+  --danger-tint: #f7e7e7;
+  --shadow: rgba(20, 22, 21, 0.12);
+  --radius: 8px;
+  font-synthesis: none;
+}
+
+:root[data-theme="dark"] {
+  --ink: #e8e8e3;
+  --paper: #15171a;
+  --surface: #1d2024;
+  --surface-2: #25282d;
+  --line: #2f333a;
+  --line-strong: #3c424a;
+  --muted: #9aa0a6;
+  --accent: #4ec38a; /* verde más claro: contraste sobre fondo oscuro */
+  --accent-tint: #1c2a24;
+  --danger: #e06a6a;
+  --danger-tint: #3a2424;
+  --shadow: rgba(0, 0, 0, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  width: 100%;
+  margin: 0;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---- top bar ---- */
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.period {
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.period::before {
+  content: "—";
+  margin-right: 10px;
+  color: var(--muted);
+}
+.month-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.month-pick label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.month-pick select {
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 6px 30px 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4.5l4 4 4-4' fill='none' stroke='%231b1d1c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+.month-total {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+.month-total strong {
+  font-size: 22px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- add-purchase row ---- */
+.add-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.add-row input {
+  font: inherit;
+  color: var(--ink);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+.add-row input.grow {
+  flex: 1;
+  min-width: 160px;
+}
+.add-row input.amount {
+  width: 110px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+button.primary {
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent-solid);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+button.primary:hover {
+  filter: brightness(1.05);
+}
+
+/* ---- dropzone ---- */
+.dropzone-wrap {
+  flex-basis: 100%;
+}
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover,
+.dropzone--active {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.dropzone small {
+  font-size: 12px;
+}
+.thumbs {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.thumb {
+  position: relative;
+  width: 88px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+  background: var(--surface);
+  text-align: center;
+}
+.thumb img {
+  width: 100%;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.thumb-pdf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 56px;
+  border-radius: 4px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 12px;
+}
+.thumb-name {
+  display: block;
+  font-size: 10px;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.thumb-x {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ---- grid ---- */
+.grid {
+  flex: 1;
+  min-height: 0;
+}
+.ag-theme-quartz {
+  --ag-font-family: Inter, system-ui, sans-serif;
+  --ag-foreground-color: var(--ink);
+  --ag-data-color: var(--ink);
+  --ag-secondary-foreground-color: var(--muted);
+  --ag-header-foreground-color: var(--muted);
+  --ag-border-color: var(--line);
+  --ag-background-color: var(--surface);
+  --ag-header-background-color: var(--surface);
+  --ag-odd-row-background-color: var(--surface);
+  --ag-row-hover-color: var(--accent-tint);
+}
+.ag-theme-quartz .ag-cell.ag-right-aligned-cell {
+  font-variant-numeric: tabular-nums;
+}
+.ag-theme-quartz .accumulated {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.link-btn {
+  font: inherit;
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+}
+.link-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.link-btn.danger {
+  color: var(--danger);
+}
+
+/* ---- receipt viewer modal ---- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 22, 21, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  max-width: 640px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 20px;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.modal-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.modal-x {
+  font: inherit;
+  font-size: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+}
+.receipt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.receipt-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--surface);
+  text-align: center;
+}
+.receipt-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.receipt-pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-weight: 700;
+  border-radius: 4px;
+}
+.receipt-name {
+  display: block;
+  font-size: 12px;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.receipt-dl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.receipt-dl:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.receipt-dl svg {
+  display: block;
+}
+.lightbox-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.lightbox-dl svg {
+  display: block;
+}
+
+.muted {
+  color: var(--muted);
+}
+.error {
+  color: var(--danger);
+}
+
+/* ---- controles de formulario: diseño propio, no el del navegador ---- */
+.add-row input.grow,
+.add-row input.amount {
+  appearance: none;
+  -webkit-appearance: none;
+}
+.add-row input:focus,
+.month-pick select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+.add-row input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+}
+.add-row input[type="date"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* ---- tarjetas de recibo: abrir a pantalla completa + descargar ---- */
+.receipt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.receipt-open {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.receipt-open img,
+.receipt-card .receipt-pdf {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* aviso flotante de "guardado", visible por encima de todo */
+/* ---- toast / avisos ---- */
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 48px));
+  padding: 12px 14px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px var(--shadow);
+  animation: toast-in 180ms ease-out;
+}
+.toast-icon {
+  flex-shrink: 0;
+  display: flex;
+  margin-top: 1px;
+  color: var(--accent);
+}
+.toast-error .toast-icon {
+  color: var(--danger);
+}
+.toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.toast-title {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.toast-detail {
+  font-size: 11.5px;
+  color: var(--muted);
+  word-break: break-word;
+  line-height: 1.35;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- visor a pantalla completa (lightbox) ---- */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 17, 16, 0.92);
+  display: flex;
+  flex-direction: column;
+}
+.lightbox-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #fff;
+}
+.lightbox-name {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lightbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.lightbox-x {
+  font-size: 26px;
+  line-height: 1;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+.lightbox-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px 16px;
+}
+.lightbox-body img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.lightbox-body iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+/* ===== desplegable propio ===== */
+.ui-select {
+  position: relative;
+  display: inline-block;
+}
+.ui-select-btn,
+.ui-date-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 150px;
+  font: inherit;
+  color: var(--ink);
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.ui-select-btn:hover,
+.ui-date-btn:hover {
+  border-color: var(--line-strong);
+}
+.ui-select-btn:focus-visible,
+.ui-date-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+.ui-caret {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.ui-select-list {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  max-height: 260px;
+  overflow: auto;
+}
+.ui-select-opt {
+  padding: 7px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ui-select-opt:hover {
+  background: var(--accent-tint);
+}
+.ui-select-opt.is-selected {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ===== calendario propio ===== */
+.ui-date {
+  position: relative;
+  display: inline-block;
+}
+.ui-cal {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 252px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.ui-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.ui-cal-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+.ui-cal-nav {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ui-cal-nav:hover {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+}
+.ui-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.ui-cal-wd {
+  margin-bottom: 4px;
+}
+.ui-cal-wdcell {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.ui-cal-empty {
+  height: 30px;
+}
+.ui-cal-day {
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.ui-cal-day:hover {
+  background: var(--accent-tint);
+}
+.ui-cal-day.is-today {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ui-cal-day.is-selected {
+  background: var(--accent-solid);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---- columnas de dinero: cabecera a la izquierda, valor a la derecha ---- */
+.ag-theme-quartz .ag-cell.money {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- aviso de validación al añadir ---- */
+.add-error {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+/* ---- diálogo de confirmación ---- */
+.modal.confirm {
+  max-width: 360px;
+}
+.confirm-msg {
+  margin: 4px 0 18px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.btn-ghost {
+  font: inherit;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.btn-ghost:hover {
+  background: var(--paper);
+}
+.btn-danger {
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: var(--danger);
+  color: #fff;
+  cursor: pointer;
+}
+.btn-danger:hover {
+  filter: brightness(1.05);
+}
+
+/* ---- barra de filtros ---- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.filter-search {
+  font: inherit;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  min-width: 220px;
+}
+.filter-search:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+/* datepicker vacío (placeholder) y botón de quitar fecha */
+.ui-date-btn.is-empty span {
+  color: var(--muted);
+}
+.ui-date-clear {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.ui-date-clear:hover {
+  color: var(--ink);
+}
+
+/* ---- dos acciones por fila (Editar / Eliminar) ---- */
+.row-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.icon-btn.danger:hover {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* ---- diálogo de edición ---- */
+.modal.edit {
+  max-width: 520px;
+}
+.edit-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.edit-field.grow-field {
+  flex: 1;
+  min-width: 160px;
+}
+.edit-form input {
+  font: inherit;
+  color: var(--ink);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.edit-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+.edit-receipts {
+  margin-bottom: 16px;
+}
+.edit-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.rec-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rec-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+.rec-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-tint);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.rec-name {
+  flex: 1;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rec-x {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.rec-x:hover {
+  color: var(--danger);
+}
+
+/* ---- campo de precio con € en el editor ---- */
+.input-eur {
+  position: relative;
+  width: 130px;
+}
+.input-eur input {
+  width: 100%;
+  padding-right: 26px;
+}
+.eur-suffix {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* ---- pestañas Detalle / Meses ---- */
+.tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  align-self: flex-start;
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+/* ---- vista por meses ---- */
+.months {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.month-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.month-card:hover {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.month-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.month-count {
+  font-size: 12px;
+  color: var(--muted);
+}
+.month-amount {
+  margin-top: 6px;
+  font-size: 20px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- botón de modo claro/oscuro ---- */
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.theme-btn {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.theme-btn:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+/* ---- filtro por año en la vista de meses ---- */
+.months-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.year-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.year-chip {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.year-chip:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.year-chip.active {
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: #fff;
+}
+.year-total {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- detalle: textarea del formulario de añadir ---- */
+.add-detail {
+  flex-basis: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: var(--ink);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  resize: vertical;
+  animation: detail-open 140ms ease-out;
+}
+.add-detail:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+@keyframes detail-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* filas pulsables */
+.clickable-row {
+  cursor: pointer;
+}
+
+/* ---- detalle: textarea del diálogo de editar ---- */
+.detail-field {
+  margin-bottom: 16px;
+}
+.edit-detail {
+  font: inherit;
+  color: var(--ink);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  resize: vertical;
+}
+.edit-detail:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+/* ---- vista de detalle de una compra ---- */
+.modal.detail {
+  width: min(520px, 92vw);
+  max-width: 520px;
+}
+.detail-head {
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* resumen: concepto + importe en una línea, fecha debajo */
+.detail-summary {
+  margin-bottom: 4px;
+}
+.detail-summary-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+}
+.detail-concept {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.detail-amount {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.detail-date {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* secciones Detalle / Recibos */
+.detail-block {
+  margin-top: 24px;
+}
+.detail-section {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.detail-text {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  white-space: pre-wrap;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.detail-text.muted {
+  color: var(--muted);
+}
+
+/* acciones al pie, separadas por una línea */
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 26px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.btn-ghost.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn-ghost.danger:hover {
+  background: var(--danger-tint);
+}
