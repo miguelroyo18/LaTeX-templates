@@ -62,6 +62,20 @@ export const monthlySummary = () => invoke<MonthSummary[]>("monthly_summary");
 export const exportData = () => invoke<string>("export_data"); // devuelve la ruta
 export const importData = (json: string) => invoke<number>("import_data", { json });
 
+// Guarda bytes (en base64) en Descargas; usado por el informe PDF.
+export const saveDownload = (filename: string, dataB64: string) =>
+  invoke<string>("save_download", { filename, dataB64 });
+
+export interface ConceptColor {
+  concept: string;
+  color: string;
+}
+export const listConceptColors = () =>
+  invoke<ConceptColor[]>("list_concept_colors");
+// color vacío ("") borra el color del concepto (vuelve al verde por defecto)
+export const setConceptColor = (concept: string, color: string) =>
+  invoke<void>("set_concept_color", { concept, color });
+
 export const listMonths = () => invoke<string[]>("list_months");
 
 export const updatePurchase = (
@@ -141,6 +155,19 @@ export const fileToReceipt = (file: File): Promise<ReceiptInput> =>
     };
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
+  });
+
+/** Turn a Blob (e.g. a generated PDF) into base64 without the data-URI prefix. */
+export const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result);
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
   });
 
 /** Turn a stored attachment back into an object URL for previewing / opening. */

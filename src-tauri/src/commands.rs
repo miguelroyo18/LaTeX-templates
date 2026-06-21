@@ -502,3 +502,85 @@ pub fn import_data(db: State<'_, Db>, json: String) -> Result<usize, String> {
     tx.commit().map_err(|e| e.to_string())?;
     Ok(count)
 }
+
+/// Save arbitrary bytes (base64) to the Downloads folder. Used for the PDF
+/// report generated in the frontend. Returns the saved path.
+#[tauri::command]
+pub fn save_download(
+    app: tauri::AppHandle,
+    filename: String,
+    data_b64: String,
+) -> Result<String, String> {
+    let bytes = B64.decode(data_b64).map_err(|e| e.to_string())?;
+
+    let dir = app
+        .path()
+        .download_dir()
+        .or_else(|_| app.path().home_dir().map(|h| h.join("Downloads")))
+        .or_else(|_| app.path().home_dir())
+        .map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    // keep only the file name, never a path the caller might have injected
+    let safe = Path::new(&filename)
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "export.pdf".to_string());
+
+    let dest = dir.join(safe);
+    std::fs::write(&dest, bytes).map_err(|e| e.to_string())?;
+    Ok(dest.to_string_lossy().into_owned())
+}
+
+// ---- color por concepto (para los gráficos) ----
+
+#[derive(Serialize, Deserialize)]
+pub struct ConceptColor {
+    pub concept: String,
+    pub color: String,
+}
+
+#[tauri::command]
+pub fn list_concept_colors(db: State<'_, Db>) -> Result<Vec<ConceptColor>, String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare("SELECT concept, color FROM concept_colors")
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |r| {
+            Ok(ConceptColor {
+                concept: r.get(0)?,
+                color: r.get(1)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+    Ok(rows)
+}
+
+/// Set (or clear, when `color` is empty) the color for a concept.
+#[tauri::command]
+pub fn set_concept_color(
+    db: State<'_, Db>,
+    concept: String,
+    color: String,
+) -> Result<(), String> {
+    let c = concept.trim();
+    if c.is_empty() {
+        return Ok(());
+    }
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    if color.is_empty() {
+        conn.execute("DELETE FROM concept_colors WHERE concept = ?1", params![c])
+            .map_err(|e| e.to_string())?;
+    } else {
+        conn.execute(
+            "INSERT INTO concept_colors (concept, color) VALUES (?1, ?2)
+             ON CONFLICT(concept) DO UPDATE SET color = excluded.color",
+            params![c, color],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}

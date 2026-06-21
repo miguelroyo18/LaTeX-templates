@@ -21,15 +21,20 @@ import {
   exportData,
   fileToReceipt,
   importData,
+  listConceptColors,
   queryPurchases,
+  setConceptColor,
   textToCents,
 } from "./lib/api";
 import { ReceiptDropzone } from "./components/ReceiptDropzone";
+import { ColorPicker } from "./components/ColorPicker";
 import { ReceiptViewer } from "./components/ReceiptViewer";
 import { DatePicker } from "./components/DatePicker";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { EditDialog } from "./components/EditDialog";
 import { MonthlyView } from "./components/MonthlyView";
+import { StatsView } from "./components/StatsView";
+import PdfExportDialog from "./components/PdfExportDialog";
 import PurchaseDetail from "./components/PurchaseDetail";
 import Toast, { type ToastData } from "./components/Toast";
 import "./styles.css";
@@ -145,10 +150,13 @@ export default function App() {
   const [detailRow, setDetailRow] = useState<PurchaseRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [editing, setEditing] = useState<PurchaseRow | null>(null);
-  const [view, setView] = useState<"detalle" | "meses">("detalle");
+  const [view, setView] = useState<"detalle" | "meses" | "estadisticas">(
+    "detalle",
+  );
   const [dark, setDark] = useState<boolean>(getInitialDark);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -170,6 +178,9 @@ export default function App() {
   const [concept, setConcept] = useState("");
   const [detail, setDetail] = useState("");
   const [amount, setAmount] = useState("");
+  const [color, setColor] = useState(""); // "" = verde por defecto
+  const [colorTouched, setColorTouched] = useState(false);
+  const [conceptColors, setConceptColors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -199,6 +210,23 @@ export default function App() {
     const t = setTimeout(load, 200);
     return () => clearTimeout(t);
   }, [load]);
+
+  const loadColors = useCallback(async () => {
+    const list = await listConceptColors();
+    const map: Record<string, string> = {};
+    for (const c of list) map[c.concept] = c.color;
+    setConceptColors(map);
+  }, []);
+
+  useEffect(() => {
+    loadColors();
+  }, [loadColors]);
+
+  // mostrar en el selector el color guardado del concepto, hasta que el usuario elija uno
+  useEffect(() => {
+    if (colorTouched) return;
+    setColor(conceptColors[concept.trim()] ?? "");
+  }, [concept, conceptColors, colorTouched]);
 
   const filtersActive = !!(search || from || to);
 
@@ -239,9 +267,15 @@ export default function App() {
     setAddError(null);
     const receipts = await Promise.all(files.map(fileToReceipt));
     await addPurchase(date, concept.trim(), detail.trim(), cents, receipts);
+    if (colorTouched) {
+      await setConceptColor(concept.trim(), color);
+      await loadColors();
+    }
     setConcept("");
     setDetail("");
     setAmount("");
+    setColor("");
+    setColorTouched(false);
     setFiles([]);
 
     // mostrar el periodo de la compra recién añadida, sin filtros de búsqueda
@@ -343,7 +377,24 @@ export default function App() {
         width: 130,
         valueFormatter: (p) => (p.value ? fmtDay(p.value) : ""),
       },
-      { headerName: "Concepto", field: "concept", flex: 1, minWidth: 160 },
+      {
+        headerName: "Concepto",
+        field: "concept",
+        flex: 1,
+        minWidth: 160,
+        cellRenderer: (p: ICellRendererParams<PurchaseRow>) => {
+          const c = p.data ? conceptColors[p.data.concept.trim()] : "";
+          return (
+            <span className="concept-cell">
+              <span
+                className="concept-dot"
+                style={{ background: c || "var(--accent)" }}
+              />
+              {p.value}
+            </span>
+          );
+        },
+      },
       {
         headerName: "Precio",
         field: "amount_cents",
@@ -398,7 +449,7 @@ export default function App() {
           ) : null,
       },
     ],
-    [openReceipts, askDelete, openEdit],
+    [openReceipts, askDelete, openEdit, conceptColors],
   );
 
   return (
@@ -407,6 +458,13 @@ export default function App() {
         <h1>Mis gastos</h1>
         {view === "detalle" && <span className="period">{periodLabel()}</span>}
         <div className="header-actions">
+          <button
+            className="btn-ghost"
+            onClick={() => setPdfOpen(true)}
+            title="Exportar a PDF (un mes o un año)"
+          >
+            PDF
+          </button>
           <button className="btn-ghost" onClick={openImport}>
             Importar
           </button>
@@ -432,9 +490,17 @@ export default function App() {
           value={concept}
           onChange={(e) => {
             setConcept(e.target.value);
+            setColorTouched(false);
             if (addError) setAddError(null);
           }}
           aria-label="Concepto"
+        />
+        <ColorPicker
+          value={color}
+          onChange={(c) => {
+            setColor(c);
+            setColorTouched(true);
+          }}
         />
         <input
           className="amount"
@@ -476,6 +542,12 @@ export default function App() {
         >
           Meses
         </button>
+        <button
+          className={`tab ${view === "estadisticas" ? "active" : ""}`}
+          onClick={() => setView("estadisticas")}
+        >
+          Estadísticas
+        </button>
       </div>
 
       {view === "meses" && (
@@ -488,6 +560,8 @@ export default function App() {
           }}
         />
       )}
+
+      {view === "estadisticas" && <StatsView colors={conceptColors} />}
 
       {view === "detalle" && (
         <>
@@ -571,6 +645,7 @@ export default function App() {
       {detailRow && (
         <PurchaseDetail
           purchase={detailRow}
+          color={conceptColors[detailRow.concept.trim()] ?? ""}
           onEdit={editFromDetail}
           onDelete={deleteFromDetail}
           onClose={() => setDetailRow(null)}
@@ -590,8 +665,12 @@ export default function App() {
       {editing && (
         <EditDialog
           purchase={editing}
+          initialColor={conceptColors[editing.concept.trim()] ?? ""}
           onClose={() => setEditing(null)}
-          onSaved={load}
+          onSaved={async () => {
+            await load();
+            await loadColors();
+          }}
         />
       )}
 
@@ -609,6 +688,13 @@ export default function App() {
           confirmLabel="Importar"
           onConfirm={doImport}
           onCancel={() => setPendingImport(null)}
+        />
+      )}
+
+      {pdfOpen && (
+        <PdfExportDialog
+          onClose={() => setPdfOpen(false)}
+          showToast={showToast}
         />
       )}
 

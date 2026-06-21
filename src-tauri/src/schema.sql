@@ -28,3 +28,9 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 CREATE INDEX IF NOT EXISTS idx_attachments_purchase
     ON attachments (purchase_id);
+
+-- Optional per-concept color for the charts. No row = default (theme green).
+CREATE TABLE IF NOT EXISTS concept_colors (
+    concept TEXT PRIMARY KEY,
+    color   TEXT NOT NULL
+);

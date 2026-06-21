@@ -4,6 +4,7 @@ import Receipts from "./Receipts";
 
 interface Props {
   purchase: PurchaseRow;
+  color: string;
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -19,6 +20,7 @@ function fmtDay(iso: string) {
  *  detail notes and the receipts as labelled sections, with edit/delete. */
 export default function PurchaseDetail({
   purchase,
+  color,
   onEdit,
   onDelete,
   onClose,
@@ -43,7 +45,13 @@ export default function PurchaseDetail({
 
         <div className="detail-summary">
           <div className="detail-summary-top">
-            <h3 className="detail-concept">{purchase.concept}</h3>
+            <h3 className="detail-concept">
+              <span
+                className="detail-dot"
+                style={{ background: color || "var(--accent)" }}
+              />
+              {purchase.concept}
+            </h3>
             <span className="detail-amount money">
               {centsToText(purchase.amount_cents)}
             </span>

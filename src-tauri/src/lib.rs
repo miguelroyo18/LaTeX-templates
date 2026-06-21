@@ -55,6 +55,9 @@ pub fn run() {
             commands::monthly_summary,
             commands::export_data,
             commands::import_data,
+            commands::save_download,
+            commands::list_concept_colors,
+            commands::set_concept_color,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

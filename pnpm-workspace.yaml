@@ -1,5 +1,9 @@
-packages:
-  - "."
-
+# pnpm v10+ no ejecuta los scripts de instalación/compilación de las
+# dependencias salvo que se aprueben aquí (medida de seguridad). esbuild —que
+# usa Vite— necesita el suyo, y la CLI de Tauri también.
+#
+# Equivale a ejecutar `pnpm approve-builds` y aprobar estos paquetes.
 allowBuilds:
   esbuild: true
+  '@tauri-apps/cli': true
+  core-js: true

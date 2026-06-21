@@ -8,25 +8,29 @@ import {
   deleteAttachment,
   fileToReceipt,
   listAttachmentMeta,
+  setConceptColor,
   textToCents,
   updatePurchase,
 } from "../lib/api";
 import { DatePicker } from "./DatePicker";
+import { ColorPicker } from "./ColorPicker";
 import { ReceiptDropzone } from "./ReceiptDropzone";
 
 interface Props {
   purchase: PurchaseRow;
+  initialColor: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-/** Editar una compra: fecha, concepto, precio y sus recibos (quitar los que hay
- *  y añadir nuevos). Los cambios se aplican al guardar; Cancelar los descarta. */
-export function EditDialog({ purchase, onClose, onSaved }: Props) {
+/** Editar una compra: fecha, concepto, color, precio y sus recibos (quitar los
+ *  que hay y añadir nuevos). Los cambios se aplican al guardar; Cancelar los descarta. */
+export function EditDialog({ purchase, initialColor, onClose, onSaved }: Props) {
   const [date, setDate] = useState(purchase.date);
   const [concept, setConcept] = useState(purchase.concept);
   const [detail, setDetail] = useState(purchase.detail);
   const [amount, setAmount] = useState(centsToInput(purchase.amount_cents));
+  const [color, setColor] = useState(initialColor);
 
   const [existing, setExisting] = useState<AttachmentMeta[]>([]);
   const [toDelete, setToDelete] = useState<number[]>([]);
@@ -70,6 +74,7 @@ export function EditDialog({ purchase, onClose, onSaved }: Props) {
     setSaving(true);
     try {
       await updatePurchase(purchase.id, date, concept.trim(), detail.trim(), cents);
+      await setConceptColor(concept.trim(), color);
       for (const id of toDelete) await deleteAttachment(id);
       if (newFiles.length) {
         const receipts: ReceiptInput[] = await Promise.all(newFiles.map(fileToReceipt));
@@ -106,6 +111,14 @@ export function EditDialog({ purchase, onClose, onSaved }: Props) {
                 setConcept(e.target.value);
                 if (error) setError(null);
               }}
+            />
+          </label>
+          <label className="edit-field">
+            <span>Color</span>
+            <ColorPicker
+              value={color}
+              onChange={setColor}
+              ariaLabel="Color del concepto"
             />
           </label>
           <label className="edit-field">
