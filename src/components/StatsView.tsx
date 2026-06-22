@@ -54,7 +54,13 @@ function BarRow({
 /** Statistics tab: pick a month or a year and see totals plus bar charts — how
  *  often each concept repeats, spending per concept, and (for a year) spending
  *  per month. */
-export function StatsView({ colors }: { colors: Record<string, string> }) {
+export function StatsView({
+  colors,
+  refreshKey,
+}: {
+  colors: Record<string, string>;
+  refreshKey?: number;
+}) {
   const [months, setMonths] = useState<string[]>([]);
   const [scope, setScope] = useState<"mes" | "año">("mes");
   const [month, setMonth] = useState("");
@@ -67,13 +73,12 @@ export function StatsView({ colors }: { colors: Record<string, string> }) {
       .then((ms) => {
         const sorted = [...ms].sort().reverse();
         setMonths(sorted);
-        if (sorted.length) {
-          setMonth(sorted[0]);
-          setYear(sorted[0].slice(0, 4));
-        }
+        // mantener la selección actual; solo elegir una por defecto la primera vez
+        setMonth((prev) => prev || sorted[0] || "");
+        setYear((prev) => prev || (sorted[0] ? sorted[0].slice(0, 4) : ""));
       })
       .catch(() => setMonths([]));
-  }, []);
+  }, [refreshKey]);
 
   const years = useMemo(
     () => Array.from(new Set(months.map((m) => m.slice(0, 4)))),
@@ -103,7 +108,7 @@ export function StatsView({ colors }: { colors: Record<string, string> }) {
     return () => {
       cancelled = true;
     };
-  }, [period?.from, period?.to]);
+  }, [period?.from, period?.to, refreshKey]);
 
   const stats = useMemo(() => {
     const total = rows.reduce((s, r) => s + r.amount_cents, 0);

@@ -147,6 +147,9 @@ const getInitialDark = () => {
 export default function App() {
   const [rows, setRows] = useState<PurchaseRow[]>([]);
   const [viewing, setViewing] = useState<number | null>(null);
+  // se incrementa al añadir/editar/borrar/importar para refrescar Meses y Estadísticas
+  const [dataVersion, setDataVersion] = useState(0);
+  const bumpData = useCallback(() => setDataVersion((v) => v + 1), []);
   const [detailRow, setDetailRow] = useState<PurchaseRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [editing, setEditing] = useState<PurchaseRow | null>(null);
@@ -255,14 +258,14 @@ export default function App() {
       setAddError("Ponle un concepto a la compra.");
       return;
     }
-    if (!amount.trim()) {
-      setAddError("Indica un precio.");
-      return;
-    }
-    const cents = textToCents(amount);
-    if (cents === null) {
-      setAddError("El precio no es válido.");
-      return;
+    let cents = 0;
+    if (amount.trim()) {
+      const c = textToCents(amount);
+      if (c === null) {
+        setAddError("El precio no es válido.");
+        return;
+      }
+      cents = c;
     }
     setAddError(null);
     const receipts = await Promise.all(files.map(fileToReceipt));
@@ -271,6 +274,7 @@ export default function App() {
       await setConceptColor(concept.trim(), color);
       await loadColors();
     }
+    bumpData();
     setConcept("");
     setDetail("");
     setAmount("");
@@ -300,6 +304,7 @@ export default function App() {
     await deletePurchase(confirmDelete);
     setConfirmDelete(null);
     await load();
+    bumpData();
   };
 
   const editFromDetail = () => {
@@ -354,6 +359,8 @@ export default function App() {
     try {
       const n = await importData(pendingImport);
       await load();
+      await loadColors();
+      bumpData();
       showToast({
         kind: "success",
         title:
@@ -486,7 +493,7 @@ export default function App() {
         <DatePicker value={date} onChange={setDate} ariaLabel="Fecha" />
         <input
           className="grow"
-          placeholder="¿Qué has comprado?"
+          placeholder="Concepto"
           value={concept}
           onChange={(e) => {
             setConcept(e.target.value);
@@ -516,7 +523,7 @@ export default function App() {
         {(concept.trim() !== "" || detail !== "") && (
           <textarea
             className="add-detail"
-            placeholder="Detalle (opcional): notas, garantía, qué incluye…"
+            placeholder="Detalles"
             value={detail}
             rows={2}
             onChange={(e) => setDetail(e.target.value)}
@@ -552,6 +559,7 @@ export default function App() {
 
       {view === "meses" && (
         <MonthlyView
+          refreshKey={dataVersion}
           onPick={(m) => {
             setSearch("");
             setFrom(`${m}-01`);
@@ -561,14 +569,16 @@ export default function App() {
         />
       )}
 
-      {view === "estadisticas" && <StatsView colors={conceptColors} />}
+      {view === "estadisticas" && (
+        <StatsView colors={conceptColors} refreshKey={dataVersion} />
+      )}
 
       {view === "detalle" && (
         <>
       <section className="filters">
         <input
           className="filter-search"
-          placeholder="Buscar concepto…"
+          placeholder="Buscar concepto o detalle…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Buscar concepto"
@@ -670,6 +680,7 @@ export default function App() {
           onSaved={async () => {
             await load();
             await loadColors();
+            bumpData();
           }}
         />
       )}

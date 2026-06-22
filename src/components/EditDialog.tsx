@@ -61,14 +61,14 @@ export function EditDialog({ purchase, initialColor, onClose, onSaved }: Props) 
       setError("Ponle un concepto.");
       return;
     }
-    if (!amount.trim()) {
-      setError("Indica un precio.");
-      return;
-    }
-    const cents = textToCents(amount);
-    if (cents === null) {
-      setError("El precio no es válido.");
-      return;
+    let cents = 0;
+    if (amount.trim()) {
+      const c = textToCents(amount);
+      if (c === null) {
+        setError("El precio no es válido.");
+        return;
+      }
+      cents = c;
     }
     setError(null);
     setSaving(true);

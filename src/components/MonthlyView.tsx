@@ -3,6 +3,7 @@ import { MonthSummary, centsToText, monthlySummary } from "../lib/api";
 
 interface Props {
   onPick: (month: string) => void;
+  refreshKey?: number;
 }
 
 const MONTHS = [
@@ -17,7 +18,7 @@ const monthName = (m: string) => {
   return name.charAt(0).toUpperCase() + name.slice(1);
 };
 
-export function MonthlyView({ onPick }: Props) {
+export function MonthlyView({ onPick, refreshKey }: Props) {
   const [items, setItems] = useState<MonthSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState<string | null>(null);
@@ -27,10 +28,10 @@ export function MonthlyView({ onPick }: Props) {
       .then((data) => {
         setItems(data);
         const ys = [...new Set(data.map((d) => d.month.slice(0, 4)))].sort().reverse();
-        setYear(ys[0] ?? null);
+        setYear((prev) => prev ?? ys[0] ?? null);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshKey]);
 
   const years = useMemo(
     () => [...new Set(items.map((i) => i.month.slice(0, 4)))].sort().reverse(),

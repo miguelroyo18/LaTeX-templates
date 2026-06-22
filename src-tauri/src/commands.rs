@@ -248,7 +248,7 @@ pub fn query_purchases(
              FROM purchases p
              WHERE (?1 IS NULL OR p.date >= ?1)
                AND (?2 IS NULL OR p.date <= ?2)
-               AND (?3 IS NULL OR p.concept LIKE ?3)
+               AND (?3 IS NULL OR p.concept LIKE ?3 OR p.detail LIKE ?3)
              ORDER BY p.date, p.id",
         )
         .map_err(|e| e.to_string())?;
