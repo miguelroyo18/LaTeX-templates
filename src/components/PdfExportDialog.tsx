@@ -4,8 +4,8 @@ import autoTable from "jspdf-autotable";
 import {
   PurchaseRow,
   blobToBase64,
-  centsToText,
   listMonths,
+  priceText,
   queryPurchases,
   saveDownload,
 } from "../lib/api";
@@ -131,13 +131,13 @@ export default function PdfExportDialog({ onClose, showToast }: Props) {
         body: rows.map((r) => [
           fmtDay(r.date),
           r.concept,
-          centsToText(r.amount_cents),
+          priceText(r.amount_cents),
         ]),
         foot: [
           [
             "",
             { content: "Total", styles: { halign: "right" } },
-            { content: centsToText(total), styles: { halign: "right" } },
+            { content: priceText(total), styles: { halign: "right" } },
           ],
         ],
         styles: { fontSize: 10, cellPadding: 6 },
@@ -237,7 +237,7 @@ export default function PdfExportDialog({ onClose, showToast }: Props) {
                           <td>{fmtDay(r.date)}</td>
                           <td>{r.concept}</td>
                           <td className="r money">
-                            {centsToText(r.amount_cents)}
+                            {priceText(r.amount_cents)}
                           </td>
                         </tr>
                       ))}
@@ -246,7 +246,7 @@ export default function PdfExportDialog({ onClose, showToast }: Props) {
                       <tr>
                         <td></td>
                         <td className="r">Total</td>
-                        <td className="r money">{centsToText(total)}</td>
+                        <td className="r money">{priceText(total)}</td>
                       </tr>
                     </tfoot>
                   </table>

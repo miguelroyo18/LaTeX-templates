@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   AttachmentMeta,
+  ListSummary,
   PurchaseRow,
   ReceiptInput,
   addAttachments,
@@ -8,29 +9,44 @@ import {
   deleteAttachment,
   fileToReceipt,
   listAttachmentMeta,
+  listsOfPurchase,
   setConceptColor,
+  setPurchaseLists,
   textToCents,
   updatePurchase,
 } from "../lib/api";
 import { DatePicker } from "./DatePicker";
 import { ColorPicker } from "./ColorPicker";
 import { ReceiptDropzone } from "./ReceiptDropzone";
+import { ListPicker } from "./ListPicker";
 
 interface Props {
   purchase: PurchaseRow;
   initialColor: string;
+  lists: ListSummary[];
+  onCreateList: (name: string) => Promise<number>;
   onClose: () => void;
   onSaved: () => void;
 }
 
-/** Editar una compra: fecha, concepto, color, precio y sus recibos (quitar los
- *  que hay y añadir nuevos). Los cambios se aplican al guardar; Cancelar los descarta. */
-export function EditDialog({ purchase, initialColor, onClose, onSaved }: Props) {
+/** Editar una compra: fecha, concepto, color, precio, listas y sus recibos
+ *  (quitar los que hay y añadir nuevos). Los cambios se aplican al guardar;
+ *  Cancelar los descarta. */
+export function EditDialog({
+  purchase,
+  initialColor,
+  lists,
+  onCreateList,
+  onClose,
+  onSaved,
+}: Props) {
   const [date, setDate] = useState(purchase.date);
   const [concept, setConcept] = useState(purchase.concept);
   const [detail, setDetail] = useState(purchase.detail);
   const [amount, setAmount] = useState(centsToInput(purchase.amount_cents));
   const [color, setColor] = useState(initialColor);
+  const [listIds, setListIds] = useState<number[]>([]);
+  const [listsLoaded, setListsLoaded] = useState(false); // no tocar listas si no se cargaron
 
   const [existing, setExisting] = useState<AttachmentMeta[]>([]);
   const [toDelete, setToDelete] = useState<number[]>([]);
@@ -41,6 +57,12 @@ export function EditDialog({ purchase, initialColor, onClose, onSaved }: Props) 
 
   useEffect(() => {
     listAttachmentMeta(purchase.id).then(setExisting).catch((e) => setError(String(e)));
+    listsOfPurchase(purchase.id)
+      .then((ids) => {
+        setListIds(ids);
+        setListsLoaded(true);
+      })
+      .catch((e) => setError(String(e)));
   }, [purchase.id]);
 
   useEffect(() => {
@@ -75,6 +97,7 @@ export function EditDialog({ purchase, initialColor, onClose, onSaved }: Props) 
     try {
       await updatePurchase(purchase.id, date, concept.trim(), detail.trim(), cents);
       await setConceptColor(concept.trim(), color);
+      if (listsLoaded) await setPurchaseLists(purchase.id, listIds);
       for (const id of toDelete) await deleteAttachment(id);
       if (newFiles.length) {
         const receipts: ReceiptInput[] = await Promise.all(newFiles.map(fileToReceipt));
@@ -135,6 +158,16 @@ export function EditDialog({ purchase, initialColor, onClose, onSaved }: Props) 
               <span className="eur-suffix">€</span>
             </div>
           </label>
+          {/* div y no label: un label reenviaría los clics del popover al botón */}
+          <div className="edit-field">
+            <span>Listas</span>
+            <ListPicker
+              lists={lists}
+              value={listIds}
+              onChange={setListIds}
+              onCreate={onCreateList}
+            />
+          </div>
         </div>
 
         <label className="edit-field detail-field">

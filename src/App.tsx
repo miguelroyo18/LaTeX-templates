@@ -5,6 +5,9 @@ import {
   ModuleRegistry,
   type ColDef,
   type ICellRendererParams,
+  type RowDragEndEvent,
+  type RowSelectionOptions,
+  type SelectionColumnDef,
 } from "ag-grid-community";
 
 // AG Grid v32: registra el modelo de filas. Si instalas v33+, usa
@@ -14,15 +17,20 @@ import "ag-grid-community/styles/ag-theme-quartz.css";
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 import {
+  ListSummary,
   PurchaseRow,
   addPurchase,
-  centsToText,
+  addToList,
+  createList,
   deletePurchase,
   exportData,
   fileToReceipt,
   importData,
   listConceptColors,
+  listLists,
+  priceText,
   queryPurchases,
+  reorderDay,
   setConceptColor,
   textToCents,
 } from "./lib/api";
@@ -37,6 +45,9 @@ import { StatsView } from "./components/StatsView";
 import PdfExportDialog from "./components/PdfExportDialog";
 import PurchaseDetail from "./components/PurchaseDetail";
 import Toast, { type ToastData } from "./components/Toast";
+import { ListPicker } from "./components/ListPicker";
+import { ListsView } from "./components/ListsView";
+import { AddToListDialog } from "./components/AddToListDialog";
 import "./styles.css";
 
 const thisMonth = () => new Date().toISOString().slice(0, 7); // 'YYYY-MM'
@@ -130,6 +141,20 @@ const SunIcon = () => (
   </svg>
 );
 
+// casillas para marcar varias filas; pulsar la fila sigue abriendo el detalle
+const ROW_SELECTION: RowSelectionOptions = {
+  mode: "multiRow",
+  checkboxes: true,
+  headerCheckbox: true,
+  enableClickSelection: false,
+};
+const SELECTION_COL: SelectionColumnDef = {
+  width: 48,
+  resizable: false,
+  suppressHeaderMenuButton: true,
+  sortable: false,
+};
+
 // tema inicial: lo guardado, o si no, la preferencia del sistema
 const getInitialDark = () => {
   try {
@@ -153,7 +178,7 @@ export default function App() {
   const [detailRow, setDetailRow] = useState<PurchaseRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [editing, setEditing] = useState<PurchaseRow | null>(null);
-  const [view, setView] = useState<"detalle" | "meses" | "estadisticas">(
+  const [view, setView] = useState<"detalle" | "meses" | "estadisticas" | "listas">(
     "detalle",
   );
   const [dark, setDark] = useState<boolean>(getInitialDark);
@@ -161,6 +186,12 @@ export default function App() {
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<AgGridReact<PurchaseRow>>(null);
+
+  // listas
+  const [lists, setLists] = useState<ListSummary[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]); // filas marcadas
+  const [addToListOpen, setAddToListOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
@@ -185,7 +216,43 @@ export default function App() {
   const [colorTouched, setColorTouched] = useState(false);
   const [conceptColors, setConceptColors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
+  const [addListIds, setAddListIds] = useState<number[]>([]);
   const [addError, setAddError] = useState<string | null>(null);
+
+  const loadLists = useCallback(async () => {
+    try {
+      setLists(await listLists());
+    } catch {
+      setLists([]);
+    }
+  }, []);
+
+  // recuentos y totales de las listas cambian con cualquier alta/edición/borrado
+  useEffect(() => {
+    loadLists();
+  }, [loadLists, dataVersion]);
+
+  // la tabla de Detalle se desmonta al cambiar de pestaña y pierde la selección
+  useEffect(() => {
+    if (view !== "detalle") setSelectedIds([]);
+  }, [view]);
+
+  // si se borra una lista, que no quede marcada en el formulario
+  useEffect(() => {
+    setAddListIds((ids) => {
+      const next = ids.filter((id) => lists.some((l) => l.id === id));
+      return next.length === ids.length ? ids : next;
+    });
+  }, [lists]);
+
+  const onCreateList = useCallback(
+    async (name: string) => {
+      const id = await createList(name);
+      await loadLists();
+      return id;
+    },
+    [loadLists],
+  );
 
   // si hay rango (Desde/Hasta), manda el rango; si no, el mes actual
   const load = useCallback(async () => {
@@ -269,7 +336,7 @@ export default function App() {
     }
     setAddError(null);
     const receipts = await Promise.all(files.map(fileToReceipt));
-    await addPurchase(date, concept.trim(), detail.trim(), cents, receipts);
+    await addPurchase(date, concept.trim(), detail.trim(), cents, receipts, addListIds);
     if (colorTouched) {
       await setConceptColor(concept.trim(), color);
       await loadColors();
@@ -281,6 +348,7 @@ export default function App() {
     setColor("");
     setColorTouched(false);
     setFiles([]);
+    setAddListIds([]);
 
     // mostrar el periodo de la compra recién añadida, sin filtros de búsqueda
     const addedMonth = date.slice(0, 7);
@@ -319,9 +387,28 @@ export default function App() {
     setDetailRow(null);
   };
 
-  const showToast = (t: ToastData) => {
+  const showToast = useCallback((t: ToastData) => {
     setToast(t);
     setTimeout(() => setToast(null), 5000);
+  }, []);
+
+  const addSelectedToLists = async (listIds: number[]) => {
+    let added = 0;
+    for (const id of listIds) added += await addToList(id, selectedIds);
+    setAddToListOpen(false);
+    gridRef.current?.api.deselectAll();
+    bumpData();
+    const names = lists.filter((l) => listIds.includes(l.id)).map((l) => `«${l.name}»`);
+    const where = names.length === 1 ? names[0] : `${listIds.length} listas`;
+    showToast({
+      kind: "success",
+      title:
+        added === 0
+          ? `Ya estaban todas en ${where}`
+          : added === 1
+            ? `1 compra añadida a ${where}`
+            : `${added} compras añadidas a ${where}`,
+    });
   };
 
   const onExport = async () => {
@@ -376,12 +463,48 @@ export default function App() {
     setPendingImport(null);
   };
 
+  const perDay = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) m.set(r.date, (m.get(r.date) ?? 0) + 1);
+    return m;
+  }, [rows]);
+
+  // Soltar una fila: solo vale dentro de su mismo día. Si cruza a otro día,
+  // se recarga el orden guardado (deshace el movimiento) y se avisa.
+  const onRowDragEnd = async (e: RowDragEndEvent<PurchaseRow>) => {
+    const moved = e.node.data;
+    if (!moved) return;
+    const order: PurchaseRow[] = [];
+    e.api.forEachNode((n) => {
+      if (n.data) order.push(n.data);
+    });
+    const stillByDate = order.every((r, i) => i === 0 || order[i - 1].date <= r.date);
+    try {
+      if (!stillByDate) {
+        showToast({
+          kind: "error",
+          title: "Solo se puede cambiar el orden dentro del mismo día",
+          detail: "Para moverla a otro día, cambia su fecha con Editar.",
+        });
+      } else {
+        const ids = order.filter((r) => r.date === moved.date).map((r) => r.id);
+        await reorderDay(moved.date, ids);
+        bumpData();
+      }
+    } catch (err) {
+      showToast({ kind: "error", title: "No se pudo cambiar el orden", detail: String(err) });
+    }
+    await load(); // orden y acumulado tal como quedaron guardados
+  };
+
   const columnDefs = useMemo<ColDef<PurchaseRow>[]>(
     () => [
       {
         headerName: "Fecha",
         field: "date",
-        width: 130,
+        width: 150,
+        // asa para arrastrar, solo en días con más de una compra
+        rowDrag: (p) => !!p.data && (perDay.get(p.data.date) ?? 0) > 1,
         valueFormatter: (p) => (p.value ? fmtDay(p.value) : ""),
       },
       {
@@ -407,14 +530,14 @@ export default function App() {
         field: "amount_cents",
         width: 130,
         cellClass: "money",
-        valueFormatter: (p) => (p.value == null ? "" : centsToText(p.value)),
+        valueFormatter: (p) => (p.value == null ? "" : priceText(p.value)),
       },
       {
         headerName: "Acumulado",
         field: "running_cents",
         width: 130,
         cellClass: "money accumulated",
-        valueFormatter: (p) => (p.value == null ? "" : centsToText(p.value)),
+        valueFormatter: (p) => (p.value == null ? "" : priceText(p.value)),
       },
       {
         headerName: "Recibos",
@@ -456,7 +579,7 @@ export default function App() {
           ) : null,
       },
     ],
-    [openReceipts, askDelete, openEdit, conceptColors],
+    [openReceipts, askDelete, openEdit, conceptColors, perDay],
   );
 
   return (
@@ -520,6 +643,12 @@ export default function App() {
           inputMode="decimal"
           aria-label="Precio"
         />
+        <ListPicker
+          lists={lists}
+          value={addListIds}
+          onChange={setAddListIds}
+          onCreate={onCreateList}
+        />
         {(concept.trim() !== "" || detail !== "") && (
           <textarea
             className="add-detail"
@@ -555,6 +684,12 @@ export default function App() {
         >
           Estadísticas
         </button>
+        <button
+          className={`tab ${view === "listas" ? "active" : ""}`}
+          onClick={() => setView("listas")}
+        >
+          Listas
+        </button>
       </div>
 
       {view === "meses" && (
@@ -571,6 +706,18 @@ export default function App() {
 
       {view === "estadisticas" && (
         <StatsView colors={conceptColors} refreshKey={dataVersion} />
+      )}
+
+      {view === "listas" && (
+        <ListsView
+          lists={lists}
+          colors={conceptColors}
+          refreshKey={dataVersion}
+          onCreate={onCreateList}
+          onChanged={bumpData}
+          onOpenPurchase={setDetailRow}
+          showToast={showToast}
+        />
       )}
 
       {view === "detalle" && (
@@ -619,12 +766,41 @@ export default function App() {
             Limpiar
           </button>
         )}
+        {selectedIds.length > 0 && (
+          <div className="sel-bar">
+            <span className="sel-count">
+              {selectedIds.length === 1
+                ? "1 seleccionada"
+                : `${selectedIds.length} seleccionadas`}
+            </span>
+            <button className="primary" onClick={() => setAddToListOpen(true)}>
+              Añadir a lista
+            </button>
+            <button
+              className="btn-ghost"
+              onClick={() => gridRef.current?.api.deselectAll()}
+            >
+              Quitar selección
+            </button>
+          </div>
+        )}
       </section>
 
       <div className="ag-theme-quartz grid">
         <AgGridReact<PurchaseRow>
+          ref={gridRef}
           rowData={rows}
           columnDefs={columnDefs}
+          rowSelection={ROW_SELECTION}
+          selectionColumnDef={SELECTION_COL}
+          onSelectionChanged={(e) =>
+            setSelectedIds(e.api.getSelectedRows().map((r) => r.id))
+          }
+          onRowDataUpdated={(e) =>
+            setSelectedIds(e.api.getSelectedRows().map((r) => r.id))
+          }
+          rowDragManaged
+          onRowDragEnd={onRowDragEnd}
           defaultColDef={{
             resizable: false,
             suppressMovable: true,
@@ -639,6 +815,10 @@ export default function App() {
           onRowClicked={(e) => {
             const target = e.event?.target as HTMLElement | null;
             if (target && target.closest("button")) return; // Ver / Editar / Eliminar
+            if (target && target.closest(".ag-row-drag")) return; // asa de arrastre
+            // la celda de la casilla marca la fila, no abre el detalle
+            const colId = target?.closest(".ag-cell")?.getAttribute("col-id") ?? "";
+            if (colId.startsWith("ag-Grid-")) return;
             if (e.data) setDetailRow(e.data);
           }}
           getRowId={(p) => String(p.data.id)}
@@ -676,6 +856,8 @@ export default function App() {
         <EditDialog
           purchase={editing}
           initialColor={conceptColors[editing.concept.trim()] ?? ""}
+          lists={lists}
+          onCreateList={onCreateList}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             await load();
@@ -706,6 +888,16 @@ export default function App() {
         <PdfExportDialog
           onClose={() => setPdfOpen(false)}
           showToast={showToast}
+        />
+      )}
+
+      {addToListOpen && (
+        <AddToListDialog
+          count={selectedIds.length}
+          lists={lists}
+          onCreate={onCreateList}
+          onConfirm={addSelectedToLists}
+          onClose={() => setAddToListOpen(false)}
         />
       )}
 

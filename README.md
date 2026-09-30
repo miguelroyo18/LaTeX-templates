@@ -2,8 +2,9 @@
 
 A local-first purchase tracker: a spreadsheet-style ledger, a receipt (PDF/image)
 stored with each row, a free-text **detail** per purchase, running total computed
-in SQL, search + date-range filters, a monthly overview, light/dark theme, and a
-one-file **JSON export/import** (receipts included). Everything lives in one
+in SQL, search + date-range filters, a monthly overview, **lists** that group purchases
+from any month (exportable to PDF/CSV), light/dark theme, and a one-file
+**JSON export/import** (receipts and lists included). Everything lives in one
 SQLite file on your machine — no server, no account.
 
 **Stack:** Tauri v2 · React + Vite + TypeScript · AG Grid Community · SQLite (rusqlite).
@@ -111,19 +112,12 @@ Copy each file from this folder to the matching path in your scaffold. Create th
 | `src/App.tsx`                         | replace the generated one                 |
 | `src/styles.css`                      | new                                       |
 | `src/lib/api.ts`                      | new                                       |
-| `src/components/ConfirmDialog.tsx`    | new                                       |
-| `src/components/DatePicker.tsx`       | new                                       |
-| `src/components/EditDialog.tsx`       | new                                       |
-| `src/components/MonthlyView.tsx`      | new                                       |
-| `src/components/PurchaseDetail.tsx`   | new                                       |
-| `src/components/Receipts.tsx`         | new                                       |
-| `src/components/ReceiptDropzone.tsx`  | new                                       |
-| `src/components/ReceiptViewer.tsx`    | new                                       |
-| `src/components/Select.tsx`           | new                                       |
-| `src/components/Toast.tsx`            | new                                       |
+| `src/lib/report.ts`                   | new (PDF/CSV export of a list)            |
+| `src/components/*.tsx`                | new — all 19 components                   |
 | `src-tauri/src/commands.rs`           | new                                       |
 | `src-tauri/src/schema.sql`            | new                                       |
 | `src-tauri/src/lib.rs`                | replace the generated one (it's complete) |
+| `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml` | replace (includes jspdf) |
 | `.github/workflows/release.yml`       | new — optional, only for CI builds        |
 
 `src-tauri/src/main.rs` stays exactly as generated — it just calls `run()`.
@@ -150,7 +144,7 @@ The database is created automatically on first launch in your OS app-data dir:
 - **Windows:** `%APPDATA%\<identifier>\purchases.db`
 
 The schema also self-migrates: on startup it adds any missing column (e.g. the
-`detail` field) without losing data.
+`detail` field) or table (e.g. `lists`) without losing data.
 
 **Smoke test** — click through these to confirm everything's wired:
 
@@ -165,7 +159,12 @@ The schema also self-migrates: on startup it adds any missing column (e.g. the
 5. **Exportar** — writes `gastos-<fecha>.json` (with receipts) to Downloads;
    **Importar** merges it back.
 6. Toggle the **sun/moon** button for dark mode.
-7. Delete a row — it and its receipts disappear.
+7. **Listas** tab: create a list, click **Añadir compras**, tick a few purchases
+   from different months. The list shows its total; export it to PDF or CSV.
+8. Back in **Detalle**, tick rows with the checkboxes and use **Añadir a lista**.
+   When adding a purchase, the **Listas** button next to the price puts it in one
+   or more lists (you can create a new list right there).
+9. Delete a row — it and its receipts disappear (and it leaves its lists).
 
 ---
 
@@ -218,6 +217,9 @@ Windows, receipts and all.
   stored — it can't drift out of sync when you edit or delete a row.
 - There's **one** purchases table; months are derived from the date, not separate
   tables — so totals and cross-month queries stay trivial.
+- Lists are a many-to-many join (`list_items`): a purchase can be in several
+  lists, deleting a list never deletes purchases, and the JSON export stores list
+  membership by position so it imports cleanly into another database.
 - Receipts are stored as **BLOBs inside the same SQLite file**, so a single file
   (or a single JSON export) is a complete backup.
 - Theming is driven by CSS variables with a `[data-theme="dark"]` override; the

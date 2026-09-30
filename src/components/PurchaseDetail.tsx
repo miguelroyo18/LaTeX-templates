@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { PurchaseRow, centsToText } from "../lib/api";
+import { PurchaseRow, priceText } from "../lib/api";
 import Receipts from "./Receipts";
 
 interface Props {
@@ -53,7 +53,7 @@ export default function PurchaseDetail({
               {purchase.concept}
             </h3>
             <span className="detail-amount money">
-              {centsToText(purchase.amount_cents)}
+              {priceText(purchase.amount_cents)}
             </span>
           </div>
           <span className="detail-date">{fmtDay(purchase.date)}</span>

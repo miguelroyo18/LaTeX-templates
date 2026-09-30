@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS purchases (
     concept      TEXT    NOT NULL,
     detail       TEXT    NOT NULL DEFAULT '',  -- free-text notes for the purchase
     amount_cents INTEGER NOT NULL,
+    seq          INTEGER NOT NULL DEFAULT 0,  -- order within the same day (drag to reorder)
     created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -34,3 +35,22 @@ CREATE TABLE IF NOT EXISTS concept_colors (
     concept TEXT PRIMARY KEY,
     color   TEXT NOT NULL
 );
+
+-- User-made lists that group purchases across months (a renovation, a trip,
+-- tax-deductible items…). A purchase can be in any number of lists; deleting a
+-- list never deletes purchases, and deleting a purchase drops it from its lists.
+CREATE TABLE IF NOT EXISTS lists (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS list_items (
+    list_id      INTEGER NOT NULL REFERENCES lists(id)     ON DELETE CASCADE,
+    purchase_id  INTEGER NOT NULL REFERENCES purchases(id) ON DELETE CASCADE,
+    added_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (list_id, purchase_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_list_items_purchase
+    ON list_items (purchase_id);

@@ -33,6 +33,7 @@ export const addPurchase = (
   detail: string,
   amount_cents: number,
   receipts: ReceiptInput[],
+  list_ids: number[] = [],
 ) =>
   invoke<number>("add_purchase", {
     date,
@@ -40,6 +41,7 @@ export const addPurchase = (
     detail,
     amountCents: amount_cents,
     receipts,
+    listIds: list_ids,
   });
 
 export const listMonth = (month: string) =>
@@ -117,6 +119,39 @@ export const addAttachments = (purchase_id: number, receipts: ReceiptInput[]) =>
 export const deleteAttachment = (attachment_id: number) =>
   invoke<void>("delete_attachment", { attachmentId: attachment_id });
 
+// ---- Listas ---------------------------------------------------------------
+
+export interface ListSummary {
+  id: number;
+  name: string;
+  count: number;
+  total_cents: number;
+}
+
+export const listLists = () => invoke<ListSummary[]>("list_lists");
+export const createList = (name: string) => invoke<number>("create_list", { name });
+export const renameList = (id: number, name: string) =>
+  invoke<void>("rename_list", { id, name });
+export const deleteList = (id: number) => invoke<void>("delete_list", { id });
+
+export const purchasesInList = (list_id: number) =>
+  invoke<PurchaseRow[]>("purchases_in_list", { listId: list_id });
+
+/** Returns how many were actually added (ones already in the list are skipped). */
+export const addToList = (list_id: number, purchase_ids: number[]) =>
+  invoke<number>("add_to_list", { listId: list_id, purchaseIds: purchase_ids });
+export const removeFromList = (list_id: number, purchase_ids: number[]) =>
+  invoke<void>("remove_from_list", { listId: list_id, purchaseIds: purchase_ids });
+
+/** New order for the purchases of one day (the ids as they appear on screen). */
+export const reorderDay = (date: string, ids: number[]) =>
+  invoke<void>("reorder_day", { date, ids });
+
+export const listsOfPurchase = (purchase_id: number) =>
+  invoke<number[]>("lists_of_purchase", { purchaseId: purchase_id });
+export const setPurchaseLists = (purchase_id: number, list_ids: number[]) =>
+  invoke<void>("set_purchase_lists", { purchaseId: purchase_id, listIds: list_ids });
+
 /** cents -> editable string, e.g. 1250 -> "12,50" (for the edit form input). */
 export const centsToInput = (cents: number) =>
   (cents / 100).toFixed(2).replace(".", ",");
@@ -129,6 +164,9 @@ export const CURRENCY = "EUR"; // you're in ES — change if you ever need to
 const fmt = new Intl.NumberFormat("es-ES", { style: "currency", currency: CURRENCY });
 
 export const centsToText = (cents: number) => fmt.format(cents / 100);
+
+/** Like centsToText, but a price of 0 shows nothing (purchases without price). */
+export const priceText = (cents: number) => (cents === 0 ? "" : centsToText(cents));
 
 /** Parse a user-typed amount like "12,50" or "12.50" into integer cents. */
 export const textToCents = (text: string): number | null => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PurchaseRow,
   centsToText,
+  priceText,
   listMonths,
   queryPurchases,
 } from "../lib/api";
@@ -244,7 +245,7 @@ export function StatsView({
                     label={c.concept}
                     value={c.sum}
                     max={maxSpend}
-                    display={centsToText(c.sum)}
+                    display={priceText(c.sum)}
                     color={colors[c.concept]}
                   />
                 ))}
@@ -261,7 +262,7 @@ export function StatsView({
                       label={m.label}
                       value={m.sum}
                       max={maxMonth}
-                      display={centsToText(m.sum)}
+                      display={priceText(m.sum)}
                     />
                   ))}
                 </div>

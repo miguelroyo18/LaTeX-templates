@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MonthSummary, centsToText, monthlySummary } from "../lib/api";
+import { MonthSummary, monthlySummary, priceText } from "../lib/api";
 
 interface Props {
   onPick: (month: string) => void;
@@ -70,7 +70,7 @@ export function MonthlyView({ onPick, refreshKey }: Props) {
             <span className="month-count">
               {it.count} {it.count === 1 ? "compra" : "compras"}
             </span>
-            <span className="month-amount">{centsToText(it.total_cents)}</span>
+            <span className="month-amount">{priceText(it.total_cents)}</span>
           </button>
         ))}
       </div>
